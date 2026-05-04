@@ -1,4 +1,4 @@
-# tools.py
+# src/tutorielIAAgentique/tools.py
 # Tool registry for the agentic system.
 # Each tool is a plain Python function: str -> str.
 #

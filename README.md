@@ -18,10 +18,10 @@ cp .env.example .env       # puis renseignez votre clé API
 tutorielIAAgentique/
 ├── src/
 │   └── tutorielIAAgentique/
-│       ├── init.py
-│       └── main.py
+│       ├── agent.py
+│       └── ...
 ├── tests/
-│   └── init.py
+│   └── ...
 ├── .env.example
 ├── .gitignore
 ├── README.md
