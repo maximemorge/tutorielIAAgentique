@@ -1,11 +1,11 @@
-requests
-python-dotenv
-groq
-langchain
-langchain-groq
-langchain-community
-langgraph
-duckduckgo-search
-wikipedia-api
-sentence-transformers
-faiss-cpu
+requests            # Requêtes HTTP
+python-dotenv       # Chargement des variables d'environnement depuis un fichier .env
+groq                # SDK Python pour l'API Groq
+langchain           # Framework principal pour chaîner des appels LLM
+langchain-groq      # Intégration LangChain ↔ Groq
+langchain-community # Outils tiers pour LangChain
+langgraph           # Framework pour construire des agents IA sous forme de graphes
+ddgs                # Recherche web sans clé API
+wikipedia-api       # Accès à l'API Wikipédia
+sentence-transformers # Nécessaire pour manipuler une base de données vectorielle
+faiss-cpu           # Index vectoriel (remplacer par faiss-gpu si GPU disponible)
