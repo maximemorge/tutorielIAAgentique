@@ -1,19 +1,9 @@
-# Environnement virtuel
 .venv/
-
-# Python
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
-
-# IDE
+.env
 .idea/
 .vscode/
-
-# Env vars
-.env
-
-# Build
 dist/
 *.egg-info/

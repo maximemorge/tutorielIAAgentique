@@ -1,0 +1,11 @@
+requests
+python-dotenv
+groq
+langchain
+langchain-groq
+langchain-community
+langgraph
+duckduckgo-search
+wikipedia-api
+sentence-transformers
+faiss-cpu
