@@ -40,4 +40,4 @@ Pour participer au tutoriel, suivez les instructions disponibles sur le
 - Une clé API Groq (disponible sur [console.groq.com](https://console.groq.com))
 
 En amont du tutoriel, vous pouvez préparer votre machine en suivant les instructions disponibles
-[[https://github.com/maximemorge/tutorielIAAgentique/wiki/01Prerequisites][ici]].
+[ici](https://github.com/maximemorge/tutorielIAAgentique/wiki/01Prerequisites).
