@@ -15,6 +15,7 @@ cp .env.example .env       # puis renseignez votre clé API
 
 ## Structure du projet
 
+```
 tutorielIAAgentique/
 ├── src/
 │   └── tutorielIAAgentique/
@@ -26,6 +27,7 @@ tutorielIAAgentique/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
+```
 
 ## Documentation
 
@@ -36,3 +38,6 @@ Pour participer au tutoriel, suivez les instructions disponibles sur le
 
 - Python 3.11+
 - Une clé API Groq (disponible sur [console.groq.com](https://console.groq.com))
+
+En amont du tutoriel, vous pouvez préparer votre machine en suivant les instructions disponibles
+[[https://github.com/maximemorge/tutorielIAAgentique/wiki/01Prerequisites][ici]].
