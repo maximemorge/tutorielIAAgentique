@@ -8,7 +8,6 @@ from ddgs import DDGS
 from groq import Groq
 from dotenv import load_dotenv
 from tutorielIAAgentique.utils import debug_print
-from tutorielIAAgentique.tools import TOOLS
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
