@@ -9,3 +9,4 @@ ddgs                # Recherche web sans clé API
 wikipedia-api       # Accès à l'API Wikipédia
 sentence-transformers # Nécessaire pour manipuler une base de données vectorielle
 faiss-cpu           # Index vectoriel (remplacer par faiss-gpu si GPU disponible)
+langchain-core
