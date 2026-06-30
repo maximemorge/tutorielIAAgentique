@@ -35,6 +35,7 @@ Available tools (you may only use these names):
 - search_web(query: string) → returns the top 3 web‑search snippets
 - calculate(expr: string) → returns a numeric result
 - fetch_wikipedia(title: string) → returns the first paragraph from Wikipedia
+- get_current_temperature(place: string) → returns the current temperature in Celsius for a city or place
 (If you need a tool that is not listed, answer with an appropriate `Answer:` line.)
 
 When the user sends a new message, treat it as a **continuation** of the same task 

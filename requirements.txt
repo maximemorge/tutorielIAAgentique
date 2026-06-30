@@ -7,6 +7,11 @@ langchain-community # Outils tiers pour LangChain
 langgraph           # Framework pour construire des agents IA sous forme de graphes
 ddgs                # Recherche web sans clé API
 wikipedia-api       # Accès à l'API Wikipédia
+openmeteo-requests  # Client Open-Meteo pour les données météo
+requests-cache      # Cache HTTP pour les requêtes météo
+retry-requests      # Nouvelles tentatives sur les erreurs HTTP temporaires
+numpy               # Manipulation des données numériques météo
+pandas              # Manipulation des séries temporelles météo
 sentence-transformers # Nécessaire pour manipuler une base de données vectorielle
 faiss-cpu           # Index vectoriel (remplacer par faiss-gpu si GPU disponible)
 langchain-core
