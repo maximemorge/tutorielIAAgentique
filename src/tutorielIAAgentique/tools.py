@@ -6,6 +6,7 @@
 #   search_web(query)      — DuckDuckGo top-3 snippets
 #   fetch_wikipedia(title) — Wikipedia article summary
 #   calculate(expr)        — safe eval of a math expression
+#   get_current_temperature(place) — current temperature from Open-Meteo
 #   execute_python(code)   — sandboxed subprocess, timeout=5 s  ← NEW
 import os
 import re
@@ -13,8 +14,19 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import openmeteo_requests
+import requests_cache
 from ddgs import DDGS
+from retry_requests import retry
 from wikipediaapi import Wikipedia
+
+
+_weather_session = retry(
+    requests_cache.CachedSession(backend="memory", expire_after=300),
+    retries=3,
+    backoff_factor=0.2,
+)
+_weather_client = openmeteo_requests.Client(session=_weather_session)
 
 # ── search_web ────────────────────────────────────────────────
 def search_web(query: str) -> str:
@@ -36,6 +48,46 @@ def calculate(expr: str) -> str:
         return str(eval(expr, {'__builtins__': {}}, {}))
     except Exception as e:
         return f'Error: {e}'
+
+
+# ── get_current_temperature ──────────────────────────────────────────
+def get_current_temperature(place: str) -> str:
+    """Return the current temperature in Celsius for a city or place."""
+    place = place.strip()
+    if not place:
+        return "Error: a city or place name is required."
+
+    try:
+        geocoding_response = _weather_session.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": place, "count": 1, "language": "en", "format": "json"},
+            timeout=10,
+        )
+        geocoding_response.raise_for_status()
+        locations = geocoding_response.json().get("results", [])
+        if not locations:
+            return f"Error: location '{place}' was not found."
+
+        location = locations[0]
+        weather_response = _weather_client.weather_api(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": location["latitude"],
+                "longitude": location["longitude"],
+                "current": "temperature_2m",
+                "temperature_unit": "celsius",
+                "timezone": "auto",
+            },
+        )[0]
+        temperature = weather_response.Current().Variables(0).Value()
+        location_name = ", ".join(
+            part
+            for part in (location.get("name"), location.get("country"))
+            if part
+        )
+        return f"Current temperature in {location_name}: {temperature:.1f} °C."
+    except Exception as exc:
+        return f"Error while retrieving temperature for '{place}': {exc}"
 
 
 # ── execute_python ────────────────────────────────────────────
@@ -194,5 +246,6 @@ TOOLS: dict[str, callable] = {
     'search_web':       search_web,
     'fetch_wikipedia':  fetch_wikipedia,
     'calculate':        calculate,
+    'get_current_temperature': get_current_temperature,
     'execute_python':   execute_python,   # ← NEW
 }
