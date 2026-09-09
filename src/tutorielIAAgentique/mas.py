@@ -12,7 +12,7 @@ from tutorielIAAgentique.tools import TOOLS
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-llm = ChatGroq(model='qwen/qwen3-32b', temperature=0.0)
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
 
 # ── State shared between all agents ───────────────────────
 class AgentState(TypedDict):

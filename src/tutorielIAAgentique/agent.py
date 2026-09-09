@@ -43,7 +43,7 @@ def react_agent(question: str, max_steps: int = 6) -> str:
     for step in range(max_steps):
         # 2.a. Get the answer
         response = client.chat.completions.create(
-            model="qwen/qwen3-32b",
+            model="qwen/qwen3.8-27b",
             messages=messages,
             temperature=0,
             seed=42,

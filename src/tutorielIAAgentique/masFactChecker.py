@@ -26,7 +26,7 @@ def invoke_with_retry(prompt: str, retries: int = 3, wait: int = 5):
             else:
                 raise
 
-llm = ChatGroq(model='qwen/qwen3-32b', temperature=0.0)
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
 
 
 
