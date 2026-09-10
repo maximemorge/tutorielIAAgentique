@@ -5,6 +5,8 @@
 # Memory is stored in a FAISS vector store and retrieved by the Researcher
 # at the start of each run, allowing the system to build on past answers.
 # src/tutorielIAAgentique/masFactChecker.py
+import re
+import time
 import os
 import operator
 from typing import TypedDict, Annotated, List
@@ -20,7 +22,31 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
+
+# Groq (tier on_demand) plafonne la SORTIE à 1000 tokens/requête pour ce modèle :
+# on fixe max_tokens sous cette limite, sinon Groq renvoie 429 (OTPM).
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0, max_tokens=800)
+
+
+def invoke_with_retry(prompt: str, retries: int = 3, wait: int = 5):
+    """Retry call for RateLimitError."""
+    for attempt in range(retries):
+        try:
+            return llm.invoke(prompt)
+        except Exception as e:
+            if '429' in str(e) and attempt < retries - 1:
+                debug_print("RATE LIMIT", f"Pause {wait}s avant retry {attempt+1}/{retries}")
+                time.sleep(wait)
+            else:
+                raise
+
+
+# Qwen3 emits chain-of-thought tags that must not be treated as content.
+_THINK_RE = re.compile(r'<think>.*?</think>', re.DOTALL)
+
+def strip_think(text: str) -> str:
+    """Remove <think>…</think> blocks and collapse extra blank lines."""
+    return _THINK_RE.sub('', text).strip()
 
 # ── Local embeddings (free, no API key required) ──────────────
 embeddings = HuggingFaceEmbeddings(
@@ -93,9 +119,10 @@ def orchestrator_node(state: AgentState) -> AgentState:
     pour deux agents : un Researcher (recherche de faits) et un Analyst
     (analyse et raisonnement). Sois concis.
     Question : {state["query"]}"""
-    response = llm.invoke(prompt)
-    debug_print("ORCHESTRATOR PLAN", response.content)  # type: ignore
-    return {'plan': response.content, 'iteration': 0}
+    response = invoke_with_retry(prompt)
+    plan = strip_think(response.content)  # type: ignore
+    debug_print("ORCHESTRATOR PLAN", plan)
+    return {'plan': plan, 'iteration': 0}
 
 # ══════════════════════════════════════════════════════════════
 # Researcher Agent — with memory
@@ -122,9 +149,10 @@ def researcher_node(state: AgentState) -> AgentState:
 
     Résultats web récents :
     {web_results}"""
-    response = llm.invoke(prompt)
-    debug_print("RESEARCH", response.content)
-    return {'research': response.content}
+    response = invoke_with_retry(prompt)
+    research = strip_think(response.content)  # type: ignore
+    debug_print("RESEARCH", research)
+    return {'research': research}
 
 # ══════════════════════════════════════════════════════════════
 # Analyst Agent
@@ -136,9 +164,10 @@ def analyst_node(state: AgentState) -> AgentState:
     Question : {state['query']}
     Recherches : {state['research'][:800]}
     Identifie les limites et incertitudes."""
-    response = llm.invoke(prompt)
-    debug_print("ANALYSIS", response.content)
-    return {'analysis': response.content}
+    response = invoke_with_retry(prompt)
+    analysis = strip_think(response.content)  # type: ignore
+    debug_print("ANALYSIS", analysis)
+    return {'analysis': analysis}
 
 # ══════════════════════════════════════════════════════════════
 # Critic Agent
@@ -154,9 +183,10 @@ def critic_node(state: AgentState) -> AgentState:
     Analyse : {state['analysis'][:800]}
     Réponds par APPROVED si satisfaisant, RETRY suivi d'instructions
     si des améliorations sont nécessaires."""
-    response = llm.invoke(prompt)
-    debug_print("CRITIC", response.content)
-    return {'critique': response.content, 'iteration': state['iteration'] + 1}
+    response = invoke_with_retry(prompt)
+    critique = strip_think(response.content)  # type: ignore
+    debug_print("CRITIC", critique)
+    return {'critique': critique, 'iteration': state['iteration'] + 1}
 
 # ══════════════════════════════════════════════════════════════
 # Synthesizer Agent
@@ -170,9 +200,9 @@ def synthesizer_node(state: AgentState) -> AgentState:
     Recherches : {state['research'][:500]}
     Analyse : {state['analysis'][:500]}
     Formate la réponse avec des sections claires."""
-    response = llm.invoke(prompt)
-    debug_print("SYNTHESIS", response.content)  # type: ignore
-    final_answer = response.content
+    response = invoke_with_retry(prompt)
+    final_answer = strip_think(response.content)  # type: ignore
+    debug_print("SYNTHESIS", final_answer)
     # Persist this Q/A pair so future runs can build on it
     memory.store(
         query=state['query'],

@@ -2,6 +2,7 @@
 import os
 import json
 import re
+import time
 import operator
 import subprocess
 from typing import TypedDict, Annotated, List
@@ -18,7 +19,22 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
+
+# Groq (tier on_demand) plafonne la SORTIE à 1000 tokens/requête pour ce modèle :
+# on fixe max_tokens sous cette limite, sinon Groq renvoie 429 (OTPM).
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0, max_tokens=800)
+
+def invoke_with_retry(prompt, retries: int = 3, wait: int = 5):
+    """Retry call for RateLimitError (accepte une chaîne ou une liste de messages)."""
+    for attempt in range(retries):
+        try:
+            return llm.invoke(prompt)
+        except Exception as e:
+            if '429' in str(e) and attempt < retries - 1:
+                debug_print("RATE LIMIT", f"Pause {wait}s avant retry {attempt+1}/{retries}")
+                time.sleep(wait)
+            else:
+                raise
 
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -120,7 +136,7 @@ def self_reflect(answer: str, query: str) -> dict:
         "Réponds avec UNIQUEMENT cet objet JSON (aucun texte avant ou après) :\n"
         '{"completude": X, "precision": X, "clarte": X, "commentaire": "..."}'
     )
-    resp = llm.invoke(prompt)
+    resp = invoke_with_retry(prompt)
     raw  = strip_think(resp.content)  # type: ignore
 
     # Extraction robuste du JSON
@@ -163,7 +179,7 @@ def mini_react_coder(task: str, context: str = '', max_steps: int = 3) -> str:
     ]
     last_output = ""
     for step in range(max_steps):
-        resp  = llm.invoke(messages)
+        resp  = invoke_with_retry(messages)
         reply = strip_think(resp.content)  # type: ignore
         messages.append({"role": "assistant", "content": reply})
 
@@ -197,7 +213,7 @@ def orchestrator_node(state: AgentState) -> AgentState:
         "Sois concis.\n\n"
         f"Question : {state['query']}"
     )
-    resp = llm.invoke(prompt)
+    resp = invoke_with_retry(prompt)
     debug_print("ORCHESTRATOR PLAN", strip_think(resp.content))  # type: ignore
     return {
         'plan':                strip_think(resp.content),  # type: ignore
@@ -223,7 +239,7 @@ def researcher_node(state: AgentState) -> AgentState:
         "Fournis des faits vérifiables et précise tes sources.\n\n"
         f"Résultats web récents :\n{web_results}"
     )
-    resp     = llm.invoke(prompt)
+    resp     = invoke_with_retry(prompt)
     research = strip_think(resp.content)  # type: ignore
     debug_print("RESEARCH", research)
 
@@ -250,7 +266,7 @@ def analyst_node(state: AgentState) -> AgentState:
         f"{code_section}\n\n"
         "Identifie les limites et incertitudes."
     )
-    resp = llm.invoke(prompt)
+    resp = invoke_with_retry(prompt)
     analysis = strip_think(resp.content)  # type: ignore
     debug_print("ANALYSIS", analysis)
     return {'analysis': analysis}
@@ -267,7 +283,7 @@ def critic_node(state: AgentState) -> AgentState:
         "Réponds par APPROVED si satisfaisant, ou RETRY suivi d'instructions "
         "précises si des améliorations sont nécessaires."
     )
-    resp = llm.invoke(prompt)
+    resp = invoke_with_retry(prompt)
     critique = strip_think(resp.content)  # type: ignore
     debug_print("CRITIC", critique)
     return {'critique': critique, 'iteration': state['iteration'] + 1}
@@ -286,7 +302,7 @@ def synthesizer_node(state: AgentState) -> AgentState:
         f"Analyse : {state['analysis'][:500]}\n\n"
         "Formate la réponse avec des sections claires."
     )
-    resp         = llm.invoke(prompt)
+    resp         = invoke_with_retry(prompt)
     final_answer = strip_think(resp.content)  # type: ignore
     debug_print("SYNTHESIS", final_answer)
 
