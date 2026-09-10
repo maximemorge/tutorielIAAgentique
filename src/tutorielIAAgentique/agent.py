@@ -1,7 +1,9 @@
 # src/tutorielIAAgentique/agent.py
 import os
 import re
+import time
 from groq import Groq
+from groq import APIConnectionError, APIStatusError, RateLimitError
 from dotenv import load_dotenv
 from tutorielIAAgentique.utils import debug_print
 from tutorielIAAgentique.tools import TOOLS
@@ -10,6 +12,36 @@ load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 debug = True
+
+MAX_RETRIES = 4
+
+def _invoke_llm(messages: list) -> str:
+    """Appel LLM avec retry sur erreurs transitoires (rate limit / réseau)."""
+    delay = 3
+    attempt = 0
+    while True:
+        try:
+            response = client.chat.completions.create(
+                model="qwen/qwen3.8-27b",
+                messages=messages,
+                temperature=0,
+                seed=42,
+                max_tokens=800,
+                stop=["---END---"]
+            )
+            return response.choices[0].message.content
+        except (APIConnectionError, RateLimitError, APIStatusError) as e:
+            code = getattr(getattr(e, 'response', None), 'status_code', None)
+            transient = isinstance(e, APIConnectionError) or isinstance(e, RateLimitError) \
+                or (code is not None and code >= 500)
+            if transient and attempt < MAX_RETRIES:
+                attempt += 1
+                if debug:
+                    debug_print("RETRY", f"Erreur transitoire ({type(e).__name__}), nouvel essai {attempt}/{MAX_RETRIES} dans {delay}s...")
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise
 
 # Read prompt
 with open(os.path.join(os.path.dirname(__file__), 'prompt.md'), encoding='utf-8') as prompt_file:
@@ -42,15 +74,7 @@ def react_agent(question: str, max_steps: int = 6) -> str:
     # 2. Iterate (with max steps)
     for step in range(max_steps):
         # 2.a. Get the answer
-        response = client.chat.completions.create(
-            model="qwen/qwen3.8-27b",
-            messages=messages,
-            temperature=0,
-            seed=42,
-            max_tokens=2000,
-            stop=["---END---"]
-        )
-        reply = response.choices[0].message.content
+        reply = _invoke_llm(messages)
         if debug :
             debug_print("RESPONSE", reply)
         # 2.b. Add it to the message list

@@ -26,7 +26,9 @@ def invoke_with_retry(prompt: str, retries: int = 3, wait: int = 5):
             else:
                 raise
 
-llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
+# Groq (tier on_demand) plafonne la SORTIE à 1000 tokens/requête pour ce modèle :
+# on fixe max_tokens sous cette limite, sinon Groq renvoie 429 (OTPM).
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0, max_tokens=800)
 
 
 

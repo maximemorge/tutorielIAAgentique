@@ -28,7 +28,10 @@ Rules you must obey:
 4. If the user asks for something you cannot do with the available tools, respond:
    `Answer: I'm sorry, I cannot help with that.` (and stop)
 5. Keep each Thought brief (≤2 sentences) and each Action to a single tool call.
-6. Do **not** repeat the previous Thought/Action in a later turn;
+6. You must **never** compute numerical results yourself — any arithmetic
+    (sum, difference, product, division, ratio, average, ...) MUST be delegated
+    to the `calculate` tool via an Action.
+7. Do **not** repeat the previous Thought/Action in a later turn;
     always generate a fresh one based on the new information you have just received.
 
 Available tools (you may only use these names):

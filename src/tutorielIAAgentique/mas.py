@@ -12,7 +12,9 @@ from tutorielIAAgentique.tools import TOOLS
 from pathlib import Path
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0)
+# max_tokens borné pour respecter le quota OTPM (1000 token/min, tier on_demand)
+# de l'API Groq : 5 appels séquentiels dans la boucle doivent rester sous ce budget.
+llm = ChatGroq(model='qwen/qwen3.8-27b', temperature=0.0, max_tokens=200)
 
 # ── State shared between all agents ───────────────────────
 class AgentState(TypedDict):
